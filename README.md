@@ -1,8 +1,11 @@
-# Welcome to your Lovable project
+# Welcome to your Our final year project
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/f9bea294-ea41-4005-902b-8604e3abd133
+Basavaraj  Sankravat
+Akshay  Reddy
+Basavaraj S
+Bharat
 
 ## How can I edit this code?
 
