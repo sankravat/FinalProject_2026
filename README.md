@@ -1,4 +1,4 @@
-# Welcome to your Our final year project
+# Welcome to Our final year project
 
 ## Project info
 
