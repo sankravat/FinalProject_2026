@@ -128,7 +128,7 @@ const Index = () => {
               </CardHeader>
               <CardContent className="text-center">
                 <p className="text-muted-foreground mb-4">
-                  Robust API integration for seamless communication with AI models
+                  Robust Flask-API integration for seamless communication with AI models
                 </p>
                 <div className="text-3xl font-bold text-accent mb-2">&lt;2s</div>
                 <p className="text-sm text-muted-foreground">Response Time</p>

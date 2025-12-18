@@ -2,28 +2,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Users, GraduationCap, Target, Lightbulb, Award, MapPin } from 'lucide-react';
 import wasteSegregationImage from '@/assets/waste-segregation.jpg';
+import guide from "@/assets/guide.jpeg";
+import teamPhoto from "@/assets/teamPhoto.jpeg";
+
 
 const About = () => {
   const teamMembers = [
     {
       name: "Basavaraj Sankravat",
-      role: "Project Lead & AI Engineer",
-      expertise: ["YOLOv8", "Computer Vision", "Deep Learning"],
+      expertise: ["YOLOv11", "Computer Vision", "Deep Learning"],
     },
     {
       name: "Akshay Reddy",
-      role: "Backend Developer",
-      expertise: ["Python", "API Development", "Model Integration"],
+
+      expertise: ["Python", "Flask API Development", "Model Integration"],
     },
     {
       name: "Basavaraj S",
-      role: "Frontend Developer",
-      expertise: ["React", "UI/UX Design", "Web Development"],
+
+      expertise: ["React", "Typescript", "UI/UX Design", "Web Development"],
     },
     {
       name: "Bharat",
-      role: "Data Scientist",
-      expertise: ["Data Analysis", "Model Training", "Performance Optimization"],
+      role: "Data Analysis",
+      expertise: ["Dataset collection", "Model Training", "Performance Optimization"],
     }
   ];
 
@@ -58,7 +60,7 @@ const About = () => {
             About RecycleVision
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Revolutionary AI-powered waste detection system developed by engineering students 
+            Revolutionary AI-powered waste detection system developed by engineering students
             to make waste management smarter and more efficient.
           </p>
         </div>
@@ -74,11 +76,11 @@ const About = () => {
             </CardHeader>
             <CardContent className="prose prose-lg max-w-none">
               <p className="text-muted-foreground leading-relaxed mb-6">
-                Manual segregation of recyclable waste is labor-intensive, inconsistent, and not scalable 
-                for modern waste management systems. Our project bridges this gap using cutting-edge YOLOv8 
+                Manual segregation of recyclable waste is labor-intensive, inconsistent, and not scalable
+                for modern waste management systems. Our project bridges this gap using cutting-edge YOLOv8
                 technology for real-time, software-based waste classification.
               </p>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
                 <div>
                   <h3 className="text-xl font-semibold text-foreground mb-4">Key Features</h3>
@@ -89,7 +91,7 @@ const About = () => {
                     </li>
                     <li className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      <span>Multi-category classification (Paper, Glass, Metal, Plastic)</span>
+                      <span>Multi-classes classification (Paper, Glass, Metal, Plastic)</span>
                     </li>
                     <li className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-primary rounded-full"></div>
@@ -101,7 +103,7 @@ const About = () => {
                     </li>
                   </ul>
                 </div>
-                
+
                 <div>
                   <h3 className="text-xl font-semibold text-foreground mb-4">Impact Goals</h3>
                   <ul className="space-y-2 text-muted-foreground">
@@ -137,9 +139,9 @@ const About = () => {
             {objectives.map((objective, index) => {
               const Icon = objective.icon;
               return (
-                <Card 
-                  key={index} 
-                  className="eco-card animate-slide-up" 
+                <Card
+                  key={index}
+                  className="eco-card animate-slide-up"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <CardContent className="p-6">
@@ -163,6 +165,68 @@ const About = () => {
           </div>
         </div>
 
+        {/* Institution */}
+        <Card className="eco-card animate-fade-in">
+          <CardContent className="p-8">
+            <div className="text-center">
+              <div className="flex items-center justify-center space-x-3 mb-4">
+                <GraduationCap className="h-8 w-8 text-primary" />
+                <MapPin className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-2xl font-bold text-foreground mb-2">
+                BLDEA's Dr P G Halakatti College of Engineering and Technology
+              </h3>
+              <p className="text-lg text-muted-foreground mb-4">Vijaypur</p>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                This project is developed as part of our engineering curriculum, combining academic
+                learning with practical application to address real-world environmental challenges.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Project Guide */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-center text-foreground mb-12 animate-fade-in">
+            Under the Guidance Of
+          </h2>
+
+          <Card className="eco-card animate-slide-up">
+            <CardContent className="p-8">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+
+                {/* Guide Image */}
+                <div className="flex-shrink-0">
+                  <img
+                    src={guide}
+                    alt="Project Guide"
+                    className="w-48 h-48 object-cover rounded-full shadow-lg border-4 border-primary/20"
+                  />
+                </div>
+
+                {/* Info */}
+                <div className="text-center md:text-left space-y-4">
+                  <h3 className="text-2xl font-bold text-foreground">
+                    DR. MAHESH NAGARAL
+                  </h3>
+
+                  <p className="text-lg text-muted-foreground">
+                    Our respected project guide, whose expertise, guidance, and continuous mentorship
+                    played a crucial role in shaping this project and enhancing the quality of our work.
+                  </p>
+
+                  <div className="flex justify-center md:justify-start space-x-3 pt-2">
+
+                    <Badge variant="secondary">Project Guide</Badge>
+                  </div>
+                </div>
+
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+
         {/* Team Section */}
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-center text-foreground mb-12 animate-fade-in">
@@ -170,9 +234,9 @@ const About = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {teamMembers.map((member, index) => (
-              <Card 
-                key={index} 
-                className="eco-card animate-slide-up" 
+              <Card
+                key={index}
+                className="eco-card animate-slide-up"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <CardContent className="p-6">
@@ -202,25 +266,31 @@ const About = () => {
           </div>
         </div>
 
-        {/* Institution */}
-        <Card className="eco-card animate-fade-in">
-          <CardContent className="p-8">
-            <div className="text-center">
-              <div className="flex items-center justify-center space-x-3 mb-4">
-                <GraduationCap className="h-8 w-8 text-primary" />
-                <MapPin className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-2">
-                BLDEA's Dr P G Halakatti College of Engineering and Technology
-              </h3>
-              <p className="text-lg text-muted-foreground mb-4">Vijaypur</p>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                This project is developed as part of our engineering curriculum, combining academic 
-                learning with practical application to address real-world environmental challenges.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Group Photo Section */}
+        <div className="my-20 flex flex-col items-center animate-slide-up">
+          <div className="relative w-80 h-80 rounded-full overflow-hidden shadow-xl border-4 border-primary/30 bg-secondary/20 hover:scale-105 transition-transform duration-300 ease-in-out">
+            <img
+              src={teamPhoto}
+              alt="Team Members"
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          <p className="text-base font-medium text-foreground mt-4">
+            Team RecycleVision
+          </p>
+
+          <p className="text-sm text-muted-foreground">
+            Academic Year 2025-26
+          </p>
+        </div>
+
+
+
+
+
+
+
 
         {/* Waste Segregation Education */}
         <div className="mt-16">
@@ -243,8 +313,8 @@ const About = () => {
                   </h3>
                   <div className="space-y-4 text-muted-foreground">
                     <p>
-                      Proper waste segregation is crucial for environmental sustainability. 
-                      When waste is correctly sorted, recycling becomes more efficient and 
+                      Proper waste segregation is crucial for environmental sustainability.
+                      When waste is correctly sorted, recycling becomes more efficient and
                       reduces landfill burden.
                     </p>
                     <div className="space-y-3">

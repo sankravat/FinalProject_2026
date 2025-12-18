@@ -1,159 +1,191 @@
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, CameraOff, Play, Square, Settings } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Camera, CameraOff, Play, Square, Settings } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+// Known 22 classes from the model
+const KNOWN_CLASSES = [
+  "battery", "can", "cardboard_bowl", "cardboard_box",
+  "chemical_plastic_bottle", "chemical_plastic_gallon",
+  "chemical_spray_can", "light_bulb", "paint_bucket",
+  "plastic_bag", "plastic_bottle", "plastic_bottle_cap",
+  "plastic_box", "plastic_cultery", "plastic_cup",
+  "plastic_cup_lid", "reuseable_paper", "scrap_paper",
+  "scrap_plastic", "snack_bag", "stick", "straw"
+];
+
 
 const Webcam = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
   const [detections, setDetections] = useState<any[]>([]);
-  const [stats, setStats] = useState({ total: 0, plastic: 0, paper: 0, glass: 0, metal: 0 });
+  const [message, setMessage] = useState<string>("");
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    return () => {
-      stopCamera();
-    };
+    return () => stopCamera();
   }, []);
 
+  // Start Webcam
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 }
+        video: { width: 640, height: 480 },
       });
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
         setIsStreaming(true);
-        
+
         toast({
           title: "Camera Started",
-          description: "Ready for live waste detection",
+          description: "Ready for detection",
         });
       }
-    } catch (error) {
+    } catch (err) {
       toast({
         title: "Camera Error",
-        description: "Unable to access camera. Please check permissions.",
+        description: "Enable camera permission",
         variant: "destructive",
       });
     }
   };
 
+  // Stop Webcam
   const stopCamera = () => {
     if (videoRef.current?.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       videoRef.current.srcObject = null;
-      setIsStreaming(false);
-      setIsDetecting(false);
-      
-      toast({
-        title: "Camera Stopped",
-        description: "Live detection ended",
-      });
     }
+
+    setIsStreaming(false);
+    stopDetection();
   };
 
+  // Start Object Detection
   const startDetection = () => {
-  if (!isStreaming) {
-    toast({
-      title: "Camera not active",
-      description: "Please start the camera first",
-      variant: "destructive",
-    });
-    return;
-  }
+    if (!isStreaming) {
+      toast({
+        title: "Camera not active",
+        description: "Start camera first",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  setIsDetecting(true);
+    setIsDetecting(true);
+    setMessage("Scanning...");
 
-  const interval = setInterval(async () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    const interval = setInterval(async () => {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!video || !canvas) return;
 
-    // Draw current frame
-    const ctx = canvas.getContext("2d");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Convert frame to blob
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
-      const formData = new FormData();
-      formData.append("file", blob, "frame.jpg");
+      // Convert canvas frame → Blob
+      canvas.toBlob(
+        async (blob) => {
+          if (!blob) return;
 
-      try {
-        const response = await fetch("http://127.0.0.1:5000/detect", {
-          method: "POST",
-          body: formData,
-        });
+          const formData = new FormData();
+          formData.append("file", blob, "frame.jpg");
 
-        if (!response.ok) throw new Error("Detection failed");
+          try {
+            const response = await fetch("http://127.0.0.1:5000/detect", {
+              method: "POST",
+              body: formData,
+            });
 
-        const data = await response.json();
+            const data = await response.json();
+            const detected = data?.detections || [];
 
-        if (data.detections) {
-          setDetections(data.detections);
+            setDetections(detected);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-          // Draw detection boxes
-          ctx.strokeStyle = "lime";
-          ctx.lineWidth = 2;
-          ctx.font = "16px Arial";
-          ctx.fillStyle = "lime";
-          data.detections.forEach((det: any) => {
-            const [x1, y1, x2, y2] = det.bbox;
-            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-            ctx.fillText(
-              `${det.category} ${(det.confidence * 100).toFixed(1)}%`,
-              x1,
-              y1 > 20 ? y1 - 5 : y1 + 15
-            );
-          });
-        }
-      } catch (err) {
-        console.error("Detection error:", err);
-      }
-    }, "image/jpeg");
-  }, 1000); // capture every 1 sec
+            if (detected.length === 0) {
+              setMessage("No objects found");
+              return;
+            }
 
-  (window as any).liveInterval = interval;
-};
+            // Draw boxes
+            detected.forEach((det: any) => {
+              const [x1, y1, x2, y2] = det.bbox;
+              const cat = det.category;
+              const conf = (det.confidence * 100).toFixed(1);
 
-const stopDetection = () => {
-  setIsDetecting(false);
-  if ((window as any).liveInterval) {
-    clearInterval((window as any).liveInterval);
-  }
-  toast({
-    title: "Detection Stopped",
-    description: "Real-time waste detection paused",
-  });
-};
+              const isKnown = KNOWN_CLASSES.includes(cat);
 
+              ctx.strokeStyle = isKnown ? "lime" : "red";
+              ctx.fillStyle = isKnown ? "lime" : "red";
+              ctx.lineWidth = 2;
 
- 
+              ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+              ctx.fillText(`${cat} ${conf}%`, x1, y1 > 20 ? y1 - 5 : y1 + 15);
+            });
+
+            // Feedback message
+            if (detected.some((d: any) => !KNOWN_CLASSES.includes(d.category))) {
+              setMessage("Unknown object detected");
+            } else {
+              setMessage(`Detected ${detected.length} items`);
+            }
+          } catch (err) {
+            console.log(err);
+          }
+        },
+        "image/jpeg",
+        0.4 // compression helps speed
+      );
+    }, 800);
+
+    (window as any).liveInterval = interval;
+  };
+
+  // Stop Detection
+  const stopDetection = () => {
+    setIsDetecting(false);
+    setDetections([]);
+    setMessage("");
+
+    if ((window as any).liveInterval) {
+      clearInterval((window as any).liveInterval);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 py-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* Header */}
         <div className="text-center mb-12 animate-fade-in">
           <h1 className="text-4xl font-bold text-foreground mb-4">
             Live Waste Detection
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Real-time AI-powered waste classification using your webcam. 
-            Start the camera and enable detection to see live results.
+            Real-time detection using YOLOv11
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Camera Section */}
+
+          {/* Camera */}
           <div className="lg:col-span-2">
             <Card className="eco-card animate-slide-up">
               <CardHeader>
@@ -161,51 +193,34 @@ const stopDetection = () => {
                   <Camera className="h-5 w-5 text-primary" />
                   <span>Live Camera Feed</span>
                 </CardTitle>
-                <CardDescription>
-                  Camera stream with real-time waste detection overlay
-                </CardDescription>
               </CardHeader>
+
               <CardContent className="space-y-4">
-                {/* Video Container */}
-                <div className="relative aspect-video bg-muted/20 rounded-lg overflow-hidden">
+
+                <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
                   <video
                     ref={videoRef}
                     className="w-full h-full object-cover"
                     playsInline
                     muted
                   />
+
                   <canvas
                     ref={canvasRef}
                     className="absolute inset-0 w-full h-full pointer-events-none"
                   />
-                  
-                  {/* Detection Overlays */}
-                  {isDetecting && detections.map((detection) => (
-                    <div
-                      key={detection.id}
-                      className="absolute border-2 border-primary bg-primary/10 rounded"
-                      style={{
-                        left: `${(detection.x / 640) * 100}%`,
-                        top: `${(detection.y / 480) * 100}%`,
-                        width: `${(detection.w / 640) * 100}%`,
-                        height: `${(detection.h / 480) * 100}%`,
-                      }}
-                    >
-                      <div className="absolute -top-8 left-0 bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
-                        {detection.category} ({(detection.confidence * 100).toFixed(0)}%)
-                      </div>
-                    </div>
-                  ))}
 
-                  {/* Status Overlay */}
+                  {/* Show status message */}
+                  {isDetecting && (
+                    <div className="absolute bottom-2 left-2 bg-black/60 text-white px-3 py-1 text-sm rounded">
+                      {message}
+                    </div>
+                  )}
+
+                  {/* Overlay when camera off */}
                   {!isStreaming && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
-                      <div className="text-center">
-                        <CameraOff className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-lg font-medium text-muted-foreground">
-                          Camera not active
-                        </p>
-                      </div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted/80">
+                      <CameraOff className="h-16 w-16 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -215,110 +230,53 @@ const stopDetection = () => {
                   <Button
                     onClick={isStreaming ? stopCamera : startCamera}
                     variant={isStreaming ? "destructive" : "default"}
-                    className={isStreaming ? "" : "eco-button"}
                   >
-                    {isStreaming ? (
-                      <>
-                        <CameraOff className="h-4 w-4 mr-2" />
-                        Stop Camera
-                      </>
-                    ) : (
-                      <>
-                        <Camera className="h-4 w-4 mr-2" />
-                        Start Camera
-                      </>
-                    )}
+                    {isStreaming ? "Stop Camera" : "Start Camera"}
                   </Button>
 
                   <Button
                     onClick={isDetecting ? stopDetection : startDetection}
                     disabled={!isStreaming}
                     variant={isDetecting ? "secondary" : "outline"}
-                    className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                   >
-                    {isDetecting ? (
-                      <>
-                        <Square className="h-4 w-4 mr-2" />
-                        Stop Detection
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-2" />
-                        Start Detection
-                      </>
-                    )}
+                    {isDetecting ? "Stop Detection" : "Start Detection"}
                   </Button>
 
                   <Button variant="ghost" className="text-muted-foreground">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
+                    <Settings className="h-4 w-4 mr-2" /> Settings
                   </Button>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Stats & Live Results */}
-          <div className="space-y-6">
-            {/* Live Stats */}
-            <Card className="eco-card animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              <CardHeader>
-                <CardTitle className="text-lg">Detection Stats</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-3 bg-primary/10 rounded-lg">
-                    <div className="text-xl font-bold text-primary">{stats.total}</div>
-                    <div className="text-xs text-muted-foreground">Total Items</div>
-                  </div>
-                  <div className="text-center p-3 bg-success/10 rounded-lg">
-                    <div className="text-xl font-bold text-success">{stats.plastic}</div>
-                    <div className="text-xs text-muted-foreground">Plastic</div>
-                  </div>
-                  <div className="text-center p-3 bg-accent/10 rounded-lg">
-                    <div className="text-xl font-bold text-accent">{stats.paper}</div>
-                    <div className="text-xs text-muted-foreground">Paper</div>
-                  </div>
-                  <div className="text-center p-3 bg-warning/10 rounded-lg">
-                    <div className="text-xl font-bold text-warning">{stats.glass + stats.metal}</div>
-                    <div className="text-xs text-muted-foreground">Glass/Metal</div>
-                  </div>
+          {/* Live Results Sidebar */}
+          <Card className="eco-card animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            <CardHeader>
+              <CardTitle className="text-lg">Detection Results</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {detections.length > 0 ? (
+                <div className="space-y-2">
+                  {detections.map((det, index) => (
+                    <div
+                      key={index}
+                      className="flex justify-between items-center p-2 bg-secondary/30 rounded"
+                    >
+                      <span className="text-sm font-medium">{det.category}</span>
+                      <span className="text-xs font-mono bg-primary/20 px-2 py-1 rounded">
+                        {(det.confidence * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Current Detections */}
-            <Card className="eco-card animate-slide-up" style={{ animationDelay: '0.4s' }}>
-              <CardHeader>
-                <CardTitle className="text-lg">Current Detections</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {detections.length > 0 ? (
-                  <div className="space-y-2">
-                    {detections.map((detection) => (
-                      <div
-                        key={detection.id}
-                        className="flex justify-between items-center p-2 bg-secondary/30 rounded"
-                      >
-                        <span className="text-sm font-medium">
-                          {detection.category}
-                        </span>
-                        <span className="text-xs font-mono bg-primary/20 px-2 py-1 rounded">
-                          {(detection.confidence * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p className="text-sm">
-                      {isDetecting ? "Scanning for waste..." : "Start detection to see live results"}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+              ) : (
+                <p className="text-center text-muted-foreground text-sm">
+                  {isDetecting ? "Scanning..." : "Start detection"}
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
