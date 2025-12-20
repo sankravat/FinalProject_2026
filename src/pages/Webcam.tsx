@@ -107,10 +107,14 @@ const Webcam = () => {
           formData.append("file", blob, "frame.jpg");
 
           try {
-            const response = await fetch("http://127.0.0.1:5000/detect", {
-              method: "POST",
-              body: formData,
-            });
+            const response = await fetch(
+              "https://basusan-recyclevision-backend.hf.space/detect",
+              {
+                method: "POST",
+                body: formData,
+              }
+            );
+
 
             const data = await response.json();
             const detected = data?.detections || [];

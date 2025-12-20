@@ -13,59 +13,63 @@ const Upload = () => {
   const { toast } = useToast();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-  const file = event.target.files?.[0];
-  if (file) {
-    setSelectedFile(file);
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    setResults(null);
-  }
-};
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setResults(null);
+    }
+  };
 
 
 
   const handleAnalysis = async () => {
-  if (!selectedFile) return;
+    if (!selectedFile) return;
 
-  setIsAnalyzing(true);
-  const formData = new FormData();
-  formData.append("file", selectedFile); // this field name must match Flask's expectation
+    setIsAnalyzing(true);
+    const formData = new FormData();
+    formData.append("file", selectedFile); // this field name must match Flask's expectation
 
-  try {
-    const response = await fetch("http://127.0.0.1:5000/detect", {
-      method: "POST",
-      body: formData,
-    });
+    try {
+      const response = await fetch(
+        "https://basusan-recyclevision-backend.hf.space/detect",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
-    const data = await response.json();
 
-    if (response.ok) {
-      setResults(data);
+      const data = await response.json();
+
+      if (response.ok) {
+        setResults(data);
+        toast({
+          title: "Analysis Complete!",
+          description: "Waste classification successful",
+        });
+      } else {
+        toast({
+          title: "Analysis Failed",
+          description: data.error || "Backend returned an error.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Analysis Complete!",
-        description: "Waste classification successful",
-      });
-    } else {
-      toast({
-        title: "Analysis Failed",
-        description: data.error || "Backend returned an error.",
+        title: "Network Error",
+        description: "Cannot reach backend.",
         variant: "destructive",
       });
+    } finally {
+      setIsAnalyzing(false);
     }
-  } catch (error) {
-    toast({
-      title: "Network Error",
-      description: "Cannot reach backend.",
-      variant: "destructive",
-    });
-  } finally {
-    setIsAnalyzing(false);
-  }
-};
+  };
 
 
 
-  
+
 
   const triggerFileSelect = () => {
     fileInputRef.current?.click();
@@ -79,7 +83,7 @@ const Upload = () => {
             Upload Image for Analysis
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Upload an image containing waste materials and our AI will identify and classify 
+            Upload an image containing waste materials and our AI will identify and classify
             recyclable items with high precision.
           </p>
         </div>
@@ -104,7 +108,7 @@ const Upload = () => {
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              
+
               {/* Upload Area */}
               <div
                 onClick={triggerFileSelect}
