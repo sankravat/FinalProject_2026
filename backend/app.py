@@ -25,7 +25,7 @@ UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Load your trained YOLOv11 model once
-model = YOLO("MODEL_PATH")
+model = YOLO(MODEL_PATH)
 
 @app.route("/detect", methods=["POST"])
 def detect_waste():
@@ -66,6 +66,11 @@ def detect_waste():
         })
     except Exception as e:
         return jsonify({"error": f"Detection failed: {str(e)}"}), 500
+    
+    @app.route("/healthz")
+    def health():
+        return "OK", 200
+
 
 
 if __name__ == "__main__":
