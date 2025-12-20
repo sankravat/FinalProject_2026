@@ -3,6 +3,19 @@ from ultralytics import YOLO
 from flask_cors import CORS
 import os
 import cv2
+import gdown
+
+MODEL_PATH = "best.pt"
+GDRIVE_FILE_ID = "1Bg1nI62iq6yp38cXYZC6UktJS13I7-IU"
+GDRIVE_URL = f"https://drive.google.com/uc?id={GDRIVE_FILE_ID}"
+
+# --------------------------------
+# DOWNLOAD MODEL IF NOT EXISTS
+# --------------------------------
+if not os.path.exists(MODEL_PATH):
+    print("⬇️ Downloading YOLO model from Google Drive...")
+    gdown.download(GDRIVE_URL, MODEL_PATH, quiet=False)
+    print("✅ Model downloaded successfully")
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins
@@ -12,7 +25,7 @@ UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Load your trained YOLOv11 model once
-model = YOLO("best.pt")
+model = YOLO("MODEL_PATH")
 
 @app.route("/detect", methods=["POST"])
 def detect_waste():
