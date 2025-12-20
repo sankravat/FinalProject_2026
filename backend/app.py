@@ -1,77 +1,121 @@
-from flask import Flask, request, jsonify
-from ultralytics import YOLO
-from flask_cors import CORS
 import os
 import cv2
-import gdown
+import numpy as np
+import requests
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from ultralytics import YOLO
 
+# ---------------------------
+# Flask App Setup
+# ---------------------------
+app = Flask(__name__)
+CORS(app)
+
+# ---------------------------
+# Model Configuration
+# ---------------------------
 MODEL_PATH = "best.pt"
-GDRIVE_FILE_ID = "1Bg1nI62iq6yp38cXYZC6UktJS13I7-IU"
-GDRIVE_URL = f"https://drive.google.com/uc?id={GDRIVE_FILE_ID}"
+GOOGLE_DRIVE_FILE_ID = "1Bg1nI62iq6yp38cXYZC6UktJS13I7-IU"
 
-# --------------------------------
-# DOWNLOAD MODEL IF NOT EXISTS
-# --------------------------------
-if not os.path.exists(MODEL_PATH):
+# ---------------------------
+# Download model if missing
+# ---------------------------
+def download_model():
+    if os.path.exists(MODEL_PATH):
+        print("✅ YOLO model already exists")
+        return
+
     print("⬇️ Downloading YOLO model from Google Drive...")
-    gdown.download(GDRIVE_URL, MODEL_PATH, quiet=False)
+
+    url = f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}"
+    response = requests.get(url, stream=True)
+
+    with open(MODEL_PATH, "wb") as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                f.write(chunk)
+
     print("✅ Model downloaded successfully")
 
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins
+# Download before loading
+download_model()
 
-# Create upload directory
-UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Load your trained YOLOv11 model once
+# ---------------------------
+# Load YOLO model (CPU safe)
+# ---------------------------
 model = YOLO(MODEL_PATH)
+model.fuse()  # reduce memory usage
 
+# ---------------------------
+# Health Check Route (REQUIRED)
+# ---------------------------
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({
+        "status": "RecycleVision backend running",
+        "endpoint": "/detect",
+        "model_loaded": True
+    })
+
+# ---------------------------
+# Detection Route
+# ---------------------------
 @app.route("/detect", methods=["POST"])
-def detect_waste():
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-
-    file = request.files["file"]
-    filename = file.filename.replace(" ", "_")  # remove spaces
-    image_path = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(image_path)
-
-    # ✅ Validate image before processing
-    img = cv2.imread(image_path)
-    if img is None:
-        return jsonify({"error": "Invalid or unreadable image"}), 400
-
+def detect():
     try:
-        # Run inference
-        results = model(image_path)
+        if "file" not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+
+        file = request.files["file"]
+        image_bytes = file.read()
+
+        img = cv2.imdecode(
+            np.frombuffer(image_bytes, np.uint8),
+            cv2.IMREAD_COLOR
+        )
+
+        if img is None:
+            return jsonify({"error": "Invalid or unreadable image"}), 400
+
+        # YOLO inference (CPU optimized)
+        results = model(
+            img,
+            conf=0.4,
+            iou=0.5,
+            device="cpu",
+            verbose=False
+        )
 
         detections = []
-        for result in results:
-            for box in result.boxes:
-                cls_id = int(box.cls)
-                conf = float(box.conf)
-                label = result.names[cls_id]
+
+        for r in results:
+            for box in r.boxes:
+                cls_id = int(box.cls[0])
+                conf = float(box.conf[0])
+                x1, y1, x2, y2 = map(float, box.xyxy[0])
+
                 detections.append({
-                    "category": label,
+                    "category": model.names[cls_id],
                     "confidence": conf,
-                    "bbox": box.xyxy[0].tolist()
+                    "bbox": [x1, y1, x2, y2]
                 })
 
         return jsonify({
             "detections": detections,
             "totalItems": len(detections),
-            "recyclable": len(detections),  # (Later you can add logic for recyclable vs non-recyclable)
-            "processingTime": f"{results[0].speed['inference']:.2f} ms"
+            "recyclable": len(detections)
         })
+
     except Exception as e:
-        return jsonify({"error": f"Detection failed: {str(e)}"}), 500
-    
-    @app.route("/healthz")
-    def health():
-        return "OK", 200
+        # ALWAYS return JSON (never HTML)
+        return jsonify({
+            "error": "Detection failed",
+            "details": str(e)
+        }), 500
 
-
-
+# ---------------------------
+# Run App (HF uses port 7860)
+# ---------------------------
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=7860)
