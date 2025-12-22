@@ -35,7 +35,7 @@ const HeroSection = () => {
 
           {/* Subheading */}
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-            Revolutionary YOLOv8-powered system for real-time identification and classification 
+            Revolutionary YOLOv8-powered system for real-time identification and classification
             of recyclable waste materials. Making waste management smarter, one detection at a time.
           </p>
 
@@ -46,7 +46,7 @@ const HeroSection = () => {
               <div className="text-sm text-muted-foreground">Accuracy Rate</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-2">4</div>
+              <div className="text-3xl font-bold text-primary mb-2">22</div>
               <div className="text-sm text-muted-foreground">Waste Categories</div>
             </div>
             <div className="text-center">
@@ -74,14 +74,17 @@ const HeroSection = () => {
 
           {/* Feature Pills */}
           <div className="flex flex-wrap justify-center gap-3 mt-12 animate-fade-in">
-            {['Paper', 'Glass', 'Metal', 'Plastic'].map((category) => (
-              <div
-                key={category}
-                className="px-4 py-2 bg-secondary/50 border border-border/50 rounded-full text-sm font-medium text-secondary-foreground hover-scale"
-              >
-                {category}
-              </div>
-            ))}
+            {['battery', 'can', 'cardboard_bowl', 'cardboard_box', 'chemical_plastic_bottle', 'chemical_plastic_gallon',
+              'chemical_spray_can', 'light_bulb', 'paint_bucket', 'plastic_bag', 'plastic_bottle', 'plastic_bottle_cap',
+              'plastic_box', 'plastic_cultery', 'plastic_cup', 'plastic_cup_lid', 'reuseable_paper', 'scrap_paper',
+              'scrap_plastic', 'snack_bag', 'stick', 'straw'].map((category) => (
+                <div
+                  key={category}
+                  className="px-4 py-2 bg-secondary/50 border border-border/50 rounded-full text-sm font-medium text-secondary-foreground hover-scale"
+                >
+                  {category}
+                </div>
+              ))}
           </div>
         </div>
       </div>
